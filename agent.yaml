@@ -1,0 +1,50 @@
+spec_version: "0.1.0"
+name: shop-builder
+version: 0.1.0
+description: >
+  Agent Town's first shop. Helps merchants create properly structured repos
+  and register them in the Town Directory. Accepts a merchant's existing
+  information (website, social media, menu, product list) and transforms it
+  into a gitagent-standard repo with an A2A Agent Card.
+
+model:
+  preferred: claude-opus-4-6
+
+skills:
+  - id: create-shop
+    name: Create Shop
+    description: >
+      Takes a merchant's raw information and creates a complete gitagent-standard
+      repo structure including agent.yaml, SOUL.md, agent-card.json, and skills/.
+    input:
+      - merchant_name
+      - merchant_description
+      - products_or_services
+      - source_urls (optional, e.g. Facebook page, website, menu photo)
+    output:
+      - Complete repo file structure ready to push to GitHub
+
+  - id: register-shop
+    name: Register Shop
+    description: >
+      Registers an existing merchant repo in the Agent Town Directory by
+      validating its structure and submitting a PR to town-hall/DIRECTORY.md.
+    input:
+      - repo_url
+    output:
+      - PR URL for directory registration
+
+  - id: validate-shop
+    name: Validate Shop
+    description: >
+      Checks if a merchant repo meets Agent Town standards: valid agent.yaml,
+      SOUL.md exists, agent-card.json is A2A-compliant.
+    input:
+      - repo_url
+    output:
+      - Validation report (pass/fail with details)
+
+tags:
+  - infrastructure
+  - onboarding
+  - agent-town
