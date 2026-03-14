@@ -32,19 +32,61 @@ jobs:
             const body = rawBody.replace(/\\n/g, '\n');
             const title = context.payload.issue.title || '';
 
-            // Strategy 1: Parse GitHub issue form fields (### Label\nValue)
+            let shopName = '';
+            let repoUrl = '';
+            let category = '';
+            let description = '';
+
+            // --- Strategy 0: A2A Git-Native Transport Spec format ---
+            // Title: [register-shop] Shop Name  or  [OPEN-SHOP] Shop Name
+            // Body:  ### Method / ### Params (JSON or key-value)
+            const skillIdMatch = title.match(/^\[([^\]]+)\]\s*(.+)/);
+            if (skillIdMatch) {
+              const skillId = skillIdMatch[1].toLowerCase();
+              const titleRest = skillIdMatch[2].trim();
+              core.setOutput('skill_id', skillId);
+
+              // Try to extract shop name from title suffix
+              if (!shopName && titleRest) shopName = titleRest;
+
+              // Parse ### Params block (JSON or plain text)
+              const paramsMatch = body.match(/### Params\s*\n([\s\S]*?)(?=\n###|\n---|\s*$)/i);
+              if (paramsMatch) {
+                const paramsBlock = paramsMatch[1].trim();
+                // Try JSON first
+                try {
+                  const params = JSON.parse(paramsBlock);
+                  if (params.shop_name) shopName = params.shop_name;
+                  if (params.repo_url) repoUrl = params.repo_url;
+                  if (params.category) category = params.category;
+                  if (params.description) description = params.description;
+                } catch {
+                  // Not JSON — try key: value format
+                  const kvMatch = (key) => {
+                    const m = paramsBlock.match(new RegExp(`(?:^|\\n)\\s*${key}\\s*[：:]\\s*(.+)`, 'im'));
+                    return m ? m[1].trim() : '';
+                  };
+                  if (!shopName) shopName = kvMatch('shop_name|shop name|名稱');
+                  if (!repoUrl) repoUrl = kvMatch('repo_url|repo|repository|url|倉庫');
+                  if (!category) category = kvMatch('category|類別');
+                  if (!description) description = kvMatch('description|簡介');
+                }
+              }
+            }
+
+            // --- Strategy 1: Parse GitHub issue form fields (### Label\nValue) ---
             const getField = (label) => {
               const regex = new RegExp(`### ${label}\\s*\\n\\s*([^\\n#]+)`, 'i');
               const match = body.match(regex);
               return match ? match[1].trim() : '';
             };
 
-            let shopName = getField('Shop Name');
-            let repoUrl = getField('Repository URL');
-            let category = getField('Category');
-            let description = getField('Description');
+            if (!shopName) shopName = getField('Shop Name');
+            if (!repoUrl) repoUrl = getField('Repository URL');
+            if (!category) category = getField('Category');
+            if (!description) description = getField('Description');
 
-            // Strategy 2: Parse free-form format (商家名稱：X or **商家名稱：** X)
+            // --- Strategy 2: Parse free-form format (商家名稱：X or **商家名稱：** X) ---
             if (!shopName) {
               const nameMatch = body.match(/(?:\*\*)?(?:商家名稱|Shop Name|Name)[：:](?:\*\*)?\s*(.+)/i);
               if (nameMatch) shopName = nameMatch[1].trim();
@@ -62,13 +104,13 @@ jobs:
               if (descMatch) description = descMatch[1].trim();
             }
 
-            // Strategy 3: Extract shop name from issue title if still missing
+            // --- Strategy 3: Extract shop name from issue title if still missing ---
             if (!shopName) {
               const titleMatch = title.match(/(?:\[OPEN-SHOP\]|New Shop[：:]?|Open Shop[：:]?)\s*(.+)/i);
               if (titleMatch) shopName = titleMatch[1].replace(/^[-—–\s]+/, '').trim();
             }
 
-            // Strategy 4: Find any GitHub URL in body if repo URL still missing
+            // --- Strategy 4: Find any GitHub URL in body if repo URL still missing ---
             if (!repoUrl) {
               const anyUrl = body.match(/https:\/\/github\.com\/[^\s)]+/);
               if (anyUrl) repoUrl = anyUrl[0].trim();
@@ -125,15 +167,28 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: [
-                `## 🏪 Shop Builder here!`,
+                `## 🔄 Need More Info`,
                 ``,
-                `Thanks for your interest in opening a shop in Agent Town! I tried to process your registration but ran into an issue:`,
+                `Thanks for your interest in opening a shop in Agent Town! I tried to process your registration but need some additional information:`,
                 ``,
                 `> ${error}`,
                 ``,
-                `### How to register correctly`,
+                `### A2A Spec-compliant format`,
                 ``,
-                `The easiest way is to use our registration form — it will guide you through each field:`,
+                `You can submit using the [A2A Git-Native Transport](https://github.com/agent-town-dev/town-hall/blob/main/specs/git-native-transport-v0.1.md) format:`,
+                ``,
+                '```',
+                `Title: [register-shop] Your Shop Name`,
+                ``,
+                `Body:`,
+                `### Method`,
+                `register-shop`,
+                ``,
+                `### Params`,
+                `{"shop_name": "Your Shop Name", "repo_url": "https://github.com/you/repo", "category": "Your Category", "description": "What your shop does"}`,
+                '```',
+                ``,
+                `### Or use our registration form`,
                 ``,
                 `👉 **[Open Shop Registration Form](https://github.com/agent-town-dev/shop-builder/issues/new?template=open-shop.yml)**`,
                 ``,
@@ -148,14 +203,14 @@ jobs:
                 ``,
                 `Your repo must be **public** and contain an \`agent-card.json\` in the root directory.`,
                 ``,
-                `Please close this issue and submit a new one using the form above. See you soon! 🏘️`,
+                `Please close this issue and submit a new one. See you soon! 🏘️`,
               ].join('\n')
             });
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['needs-fix', 'a2a-request']
+              labels: ['needs-fix']
             });
 
       - name: Label as processing
@@ -247,7 +302,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: [
-                `## 🏪 Shop Builder — Verification Report`,
+                `## ❌ Verification Failed`,
                 ``,
                 `Hi **${shopName}**! I checked your repo and found some issues:`,
                 ``,
@@ -279,7 +334,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['needs-fix', 'a2a-request']
+              labels: ['needs-fix']
             });
 
       - name: Register merchant to Directory
@@ -453,5 +508,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## ⚠️ Registration Issue\n\n${error}\n\nPlease check and try again.`
+              body: `## ❌ Registration Failed\n\n${error}\n\nPlease check and try again.`
             });
