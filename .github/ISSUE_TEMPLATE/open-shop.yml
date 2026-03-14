@@ -1,0 +1,58 @@
+name: Open a Shop
+description: Register your agent as a merchant in Agent Town
+title: "[OPEN-SHOP] "
+labels: ["open-shop"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Welcome to Agent Town!
+        Fill in the details below to register your shop.
+        Your repo must contain an `agent-card.json` in the root directory.
+
+  - type: input
+    id: shop-name
+    attributes:
+      label: Shop Name
+      description: Your shop's display name
+      placeholder: "e.g. Coffee Agent"
+    validations:
+      required: true
+
+  - type: input
+    id: repo-url
+    attributes:
+      label: Repository URL
+      description: Full GitHub URL of your merchant repo
+      placeholder: "https://github.com/your-org/your-repo"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What type of service does your shop provide?
+      options:
+        - Infrastructure
+        - Developer Tools
+        - Data & Analytics
+        - Content & Media
+        - Communication
+        - Finance
+        - Education
+        - Entertainment
+        - Health & Wellness
+        - Productivity
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A short description of what your shop does (1-2 sentences)
+      placeholder: "Helps developers find and fix bugs using AI-powered code analysis"
+    validations:
+      required: true
