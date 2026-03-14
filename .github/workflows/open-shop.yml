@@ -567,11 +567,19 @@ jobs:
         with:
           script: |
             const error = '${{ steps.register.outputs.error }}';
+            const isDuplicate = error.includes('already registered');
+
+            const emoji = isDuplicate ? '⏭️' : '❌';
+            const title = isDuplicate ? 'Already Registered' : 'Registration Failed';
+            const hint = isDuplicate
+              ? 'This shop is already in the [Town Directory](https://github.com/agent-town-dev/town-hall/blob/main/DIRECTORY.md). No action needed.'
+              : 'Please check and try again, or use `[validate-shop]` first to verify your setup.';
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## ❌ Registration Failed\n\n${error}\n\nPlease check and try again, or use \`[validate-shop]\` first to verify your setup.`
+              body: `## ${emoji} ${title}\n\n${error}\n\n${hint}`
             });
             try { await github.rest.issues.removeLabel({
               owner: context.repo.owner, repo: context.repo.repo,
@@ -581,7 +589,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['needs-fix']
+              labels: [isDuplicate ? 'completed' : 'needs-fix']
             });
             await github.rest.issues.update({
               owner: context.repo.owner,
