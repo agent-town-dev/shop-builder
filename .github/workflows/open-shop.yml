@@ -2,16 +2,10 @@ name: Open Shop - Process Registration
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened]
 
 jobs:
   process-shop-registration:
-    if: >
-      contains(github.event.issue.title, '[OPEN-SHOP]') ||
-      contains(github.event.issue.title, 'New Shop') ||
-      contains(github.event.issue.title, 'Open Shop') ||
-      contains(github.event.issue.title, 'open-shop') ||
-      contains(join(github.event.issue.labels.*.name, ','), 'open-shop')
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -112,17 +106,43 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const error = `${{ steps.parse.outputs.error }}`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## ❌ Registration Failed\n\n${`${{ steps.parse.outputs.error }}`}\n\nPlease close this issue, fix the errors, and submit a new one.`
+              body: [
+                `## 🏪 Shop Builder here!`,
+                ``,
+                `Thanks for your interest in opening a shop in Agent Town! I tried to process your registration but ran into an issue:`,
+                ``,
+                `> ${error}`,
+                ``,
+                `### How to register correctly`,
+                ``,
+                `The easiest way is to use our registration form — it will guide you through each field:`,
+                ``,
+                `👉 **[Open Shop Registration Form](https://github.com/agent-town-dev/shop-builder/issues/new?template=open-shop.yml)**`,
+                ``,
+                `### What you'll need`,
+                ``,
+                `| Field | Required | Example |`,
+                `|-------|----------|---------|`,
+                `| **Shop Name** | ✅ | My Coffee Agent |`,
+                `| **Repository URL** | ✅ | https://github.com/you/your-repo |`,
+                `| **Category** | ✅ | Select from list |`,
+                `| **Description** | ✅ | 1-2 sentences about your shop |`,
+                ``,
+                `Your repo must be **public** and contain an \`agent-card.json\` in the root directory.`,
+                ``,
+                `Please close this issue and submit a new one using the form above. See you soon! 🏘️`,
+              ].join('\n')
             });
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['invalid']
+              labels: ['needs-fix']
             });
 
       - name: Verify repo exists
@@ -185,19 +205,56 @@ jobs:
           script: |
             const repoError = '${{ steps.verify-repo.outputs.error }}';
             const cardError = '${{ steps.verify-card.outputs.error }}';
-            const error = repoError || cardError;
+            const shopName = '${{ steps.parse.outputs.shop_name }}';
+            const repoUrl = '${{ steps.parse.outputs.repo_url }}';
+
+            const checks = [
+              { label: 'Repo is public', ok: !repoError, detail: repoError || 'Verified' },
+              { label: 'agent-card.json exists', ok: !cardError, detail: cardError || 'Verified' }
+            ];
+
+            const table = checks.map(c =>
+              `| ${c.label} | ${c.ok ? '✅' : '❌'} | ${c.detail} |`
+            ).join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `## ❌ Verification Failed\n\n${error}\n\n### What to do\n1. Make sure your repo is **public**\n2. Add an \`agent-card.json\` to your repo root ([A2A standard](https://github.com/a2aproject/A2A))\n3. Close this issue and submit a new one`
+              body: [
+                `## 🏪 Shop Builder — Verification Report`,
+                ``,
+                `Hi **${shopName}**! I checked your repo and found some issues:`,
+                ``,
+                `| Check | Status | Detail |`,
+                `|-------|--------|--------|`,
+                table,
+                ``,
+                `### How to fix`,
+                ``,
+                `1. Make sure your repo (\`${repoUrl}\`) is **public**`,
+                `2. Add an \`agent-card.json\` to your repo root — here's the [A2A Agent Card standard](https://github.com/a2aproject/A2A)`,
+                `3. Example minimal agent-card.json:`,
+                ``,
+                '```json',
+                `{`,
+                `  "name": "${shopName}",`,
+                `  "description": "Your shop description",`,
+                `  "url": "${repoUrl}",`,
+                `  "version": "1.0.0",`,
+                `  "capabilities": {},`,
+                `  "skills": []`,
+                `}`,
+                '```',
+                ``,
+                `Once fixed, please close this issue and [submit a new one](https://github.com/agent-town-dev/shop-builder/issues/new?template=open-shop.yml). I'll verify again automatically! 🏘️`,
+              ].join('\n')
             });
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['invalid']
+              labels: ['needs-fix']
             });
 
       - name: Register merchant to Directory
