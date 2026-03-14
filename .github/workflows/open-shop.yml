@@ -11,6 +11,17 @@ jobs:
       issues: write
 
     steps:
+      - name: Label as A2A request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['a2a-request']
+            });
+
       - name: Parse issue body
         id: parse
         uses: actions/github-script@v7
@@ -144,7 +155,19 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['needs-fix']
+              labels: ['needs-fix', 'a2a-request']
+            });
+
+      - name: Label as processing
+        if: steps.parse.outputs.valid == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['processing']
             });
 
       - name: Verify repo exists
@@ -256,7 +279,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              labels: ['needs-fix']
+              labels: ['needs-fix', 'a2a-request']
             });
 
       - name: Register merchant to Directory
@@ -417,7 +440,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               state: 'closed',
-              labels: ['registered']
+              labels: ['completed', 'a2a-request']
             });
 
       - name: Comment - registration error
