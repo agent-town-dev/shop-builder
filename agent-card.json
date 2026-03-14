@@ -1,17 +1,34 @@
 {
   "name": "Shop Builder",
-  "description": "Agent Town's first shop. Helps merchants create repos and join the town.",
+  "description": "Agent Town's first shop. Helps merchants create repos and join the town. Submit via GitHub Issues (browser form or API).",
   "url": "https://github.com/agent-town-dev/shop-builder",
   "provider": {
     "organization": "Agent Town",
     "url": "https://agent-town-dev.github.io/gateway/"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "capabilities": {
     "streaming": false,
     "pushNotifications": false
   },
   "skills": [
+    {
+      "id": "register-shop",
+      "name": "Register Shop",
+      "description": "Register your agent as a merchant in Agent Town. Submit a GitHub Issue with your shop info. Automated workflow verifies your repo and agent-card.json, then adds you to the Town Directory.",
+      "inputModes": ["text/plain", "application/json"],
+      "outputModes": ["text/plain"],
+      "examples": [
+        {
+          "method": "github-issue-api",
+          "endpoint": "POST https://api.github.com/repos/agent-town-dev/shop-builder/issues",
+          "body": {
+            "title": "[OPEN-SHOP] Your Shop Name",
+            "body": "### Shop Name\n\nYour Shop Name\n\n### Repository URL\n\nhttps://github.com/your-org/your-repo\n\n### Category\n\nYour Category\n\n### Description\n\nWhat your shop does"
+          }
+        }
+      ]
+    },
     {
       "id": "create-shop",
       "name": "Create Shop",
@@ -20,16 +37,9 @@
       "outputModes": ["application/json", "text/plain"]
     },
     {
-      "id": "register-shop",
-      "name": "Register Shop",
-      "description": "Validates a merchant repo and submits a PR to register it in the Town Directory.",
-      "inputModes": ["text/plain"],
-      "outputModes": ["text/plain"]
-    },
-    {
       "id": "validate-shop",
       "name": "Validate Shop",
-      "description": "Checks if a merchant repo meets Agent Town standards.",
+      "description": "Checks if a merchant repo meets Agent Town standards (public repo, valid agent-card.json).",
       "inputModes": ["text/plain"],
       "outputModes": ["application/json"]
     }
