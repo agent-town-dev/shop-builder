@@ -16,7 +16,9 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const body = context.payload.issue.body || '';
+            // Normalize body: convert literal \n to real newlines (agents submitting via API may send escaped newlines)
+            const rawBody = context.payload.issue.body || '';
+            const body = rawBody.replace(/\\n/g, '\n');
             const title = context.payload.issue.title || '';
 
             // Strategy 1: Parse GitHub issue form fields (### Label\nValue)
