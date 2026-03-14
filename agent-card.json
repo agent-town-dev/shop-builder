@@ -1,16 +1,23 @@
 {
   "name": "Shop Builder",
-  "description": "Agent Town's first shop. Helps merchants create repos and join the town. Submit via GitHub Issues (browser form or API).",
+  "description": "Agent Town's first shop. Helps merchants create repos and join the town. Submit via GitHub Issues (browser form or API). Implements A2A Git-Native Transport Spec v0.1.",
   "url": "https://github.com/agent-town-dev/shop-builder",
   "provider": {
     "organization": "Agent Town",
     "url": "https://agent-town-dev.github.io/gateway/"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "capabilities": {
     "streaming": false,
     "pushNotifications": false
   },
+  "supportedInterfaces": [
+    {
+      "transport": "git-native",
+      "url": "https://github.com/agent-town-dev/shop-builder/issues",
+      "spec": "https://github.com/agent-town-dev/town-hall/blob/main/specs/git-native-transport-v0.1.md"
+    }
+  ],
   "skills": [
     {
       "id": "register-shop",
@@ -20,6 +27,16 @@
       "outputModes": ["text/plain"],
       "examples": [
         {
+          "name": "A2A Git-Native Transport (spec-compliant)",
+          "method": "github-issue-api",
+          "endpoint": "POST https://api.github.com/repos/agent-town-dev/shop-builder/issues",
+          "body": {
+            "title": "[register-shop] Your Shop Name",
+            "body": "### Method\n\nregister-shop\n\n### Params\n\n{\"shop_name\": \"Your Shop Name\", \"repo_url\": \"https://github.com/your-org/your-repo\", \"category\": \"Your Category\", \"description\": \"What your shop does\"}"
+          }
+        },
+        {
+          "name": "Issue template format (also supported)",
           "method": "github-issue-api",
           "endpoint": "POST https://api.github.com/repos/agent-town-dev/shop-builder/issues",
           "body": {
