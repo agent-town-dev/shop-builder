@@ -2,11 +2,16 @@ name: Open Shop - Process Registration
 
 on:
   issues:
-    types: [opened]
+    types: [opened, labeled]
 
 jobs:
   process-shop-registration:
-    if: contains(github.event.issue.title, '[OPEN-SHOP]')
+    if: >
+      contains(github.event.issue.title, '[OPEN-SHOP]') ||
+      contains(github.event.issue.title, 'New Shop') ||
+      contains(github.event.issue.title, 'Open Shop') ||
+      contains(github.event.issue.title, 'open-shop') ||
+      contains(join(github.event.issue.labels.*.name, ','), 'open-shop')
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -18,34 +23,73 @@ jobs:
         with:
           script: |
             const body = context.payload.issue.body || '';
+            const title = context.payload.issue.title || '';
 
-            // Parse GitHub issue form fields
+            // Strategy 1: Parse GitHub issue form fields (### Label\nValue)
             const getField = (label) => {
               const regex = new RegExp(`### ${label}\\s*\\n\\s*([^\\n#]+)`, 'i');
               const match = body.match(regex);
               return match ? match[1].trim() : '';
             };
 
-            const shopName = getField('Shop Name');
-            const repoUrl = getField('Repository URL');
-            const category = getField('Category');
-            const description = getField('Description');
+            let shopName = getField('Shop Name');
+            let repoUrl = getField('Repository URL');
+            let category = getField('Category');
+            let description = getField('Description');
+
+            // Strategy 2: Parse free-form format (商家名稱：X or **商家名稱：** X)
+            if (!shopName) {
+              const nameMatch = body.match(/(?:\*\*)?(?:商家名稱|Shop Name|Name)[：:](?:\*\*)?\s*(.+)/i);
+              if (nameMatch) shopName = nameMatch[1].trim();
+            }
+            if (!repoUrl) {
+              const urlMatch = body.match(/(?:\*\*)?(?:Repository URL|Repo|倉庫)[：:](?:\*\*)?\s*(https:\/\/github\.com\/\S+)/i);
+              if (urlMatch) repoUrl = urlMatch[1].trim();
+            }
+            if (!category) {
+              const catMatch = body.match(/(?:\*\*)?(?:類別|Category)[：:](?:\*\*)?\s*(.+)/i);
+              if (catMatch) category = catMatch[1].trim();
+            }
+            if (!description) {
+              const descMatch = body.match(/(?:\*\*)?(?:簡介|Description)[：:](?:\*\*)?\s*(.+)/i);
+              if (descMatch) description = descMatch[1].trim();
+            }
+
+            // Strategy 3: Extract shop name from issue title if still missing
+            if (!shopName) {
+              const titleMatch = title.match(/(?:\[OPEN-SHOP\]|New Shop[：:]?|Open Shop[：:]?)\s*(.+)/i);
+              if (titleMatch) shopName = titleMatch[1].replace(/^[-—–\s]+/, '').trim();
+            }
+
+            // Strategy 4: Find any GitHub URL in body if repo URL still missing
+            if (!repoUrl) {
+              const anyUrl = body.match(/https:\/\/github\.com\/[^\s)]+/);
+              if (anyUrl) repoUrl = anyUrl[0].trim();
+            }
+
+            // Default category if not provided
+            if (!category) category = 'Other';
+
+            // Use first non-empty paragraph as description if still missing
+            if (!description) {
+              const paragraphs = body.split(/\n\n+/).filter(p => p.trim() && !p.startsWith('#') && !p.startsWith('|') && !p.startsWith('*'));
+              if (paragraphs.length > 0) description = paragraphs[0].replace(/\n/g, ' ').trim().substring(0, 200);
+            }
 
             // Validate required fields
             const missing = [];
             if (!shopName) missing.push('Shop Name');
             if (!repoUrl) missing.push('Repository URL');
-            if (!category) missing.push('Category');
             if (!description) missing.push('Description');
 
             if (missing.length > 0) {
               core.setOutput('valid', 'false');
-              core.setOutput('error', `Missing required fields: ${missing.join(', ')}`);
+              core.setOutput('error', `Missing required fields: ${missing.join(', ')}. Please use the [issue template](https://github.com/agent-town-dev/shop-builder/issues/new?template=open-shop.yml) or include these fields in your issue.`);
               return;
             }
 
             // Parse owner/repo from URL
-            const repoMatch = repoUrl.match(/github\.com\/([^\/]+)\/([^\/\s]+)/);
+            const repoMatch = repoUrl.match(/github\.com\/([^\/]+)\/([^\/\s)]+)/);
             if (!repoMatch) {
               core.setOutput('valid', 'false');
               core.setOutput('error', `Invalid repository URL: ${repoUrl}`);
