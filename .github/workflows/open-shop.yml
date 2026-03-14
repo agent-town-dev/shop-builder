@@ -436,9 +436,16 @@ jobs:
               const newRow = `| ${shopName} | [${owner}/${repo}](${repoUrl}) | ${category} | ${description} | [agent-card.json](${rawCardUrl}) |`;
 
               const lines = currentContent.split('\n');
-              const separatorIndex = lines.findIndex(l => l.startsWith('---'));
-              if (separatorIndex > 0) {
-                lines.splice(separatorIndex, 0, newRow);
+              // Find the last table row (line starting with |) to append after it
+              let lastTableRow = -1;
+              for (let i = lines.length - 1; i >= 0; i--) {
+                if (lines[i].trimStart().startsWith('|') && !lines[i].includes('---')) {
+                  lastTableRow = i;
+                  break;
+                }
+              }
+              if (lastTableRow >= 0) {
+                lines.splice(lastTableRow + 1, 0, newRow);
               } else {
                 lines.push(newRow);
               }
