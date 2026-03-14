@@ -39,11 +39,11 @@ jobs:
 
             // --- Strategy 0: A2A Git-Native Transport Spec format ---
             // Title: [skill-id] Summary
+            let titleHint = ''; // title suffix is a hint, not the shop name
             const skillIdMatch = title.match(/^\[([^\]]+)\]\s*(.+)/);
             if (skillIdMatch) {
               skillId = skillIdMatch[1].toLowerCase().trim();
-              const titleRest = skillIdMatch[2].trim();
-              if (titleRest) shopName = titleRest;
+              titleHint = skillIdMatch[2].trim();
 
               // Parse ### Params block
               const paramsMatch = body.match(/### Params\s*\n([\s\S]*?)(?=\n###|\n---|\s*$)/i);
@@ -102,6 +102,9 @@ jobs:
               const m = title.match(/(?:\[OPEN-SHOP\]|New Shop[：:]?|Open Shop[：:]?)\s*(.+)/i);
               if (m) shopName = m[1].replace(/^[-—–\s]+/, '').trim();
             }
+
+            // --- Strategy 5: Use [skill-id] title suffix as last resort ---
+            if (!shopName && titleHint) shopName = titleHint;
 
             // --- Strategy 4: Any GitHub URL ---
             if (!repoUrl) {
@@ -319,7 +322,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const shopName = '${{ steps.parse.outputs.shop_name }}';
+            const parsedName = '${{ steps.parse.outputs.shop_name }}';
             const repoUrl = '${{ steps.parse.outputs.repo_url }}';
             const owner = '${{ steps.parse.outputs.owner }}';
             const repo = '${{ steps.parse.outputs.repo }}';
@@ -327,6 +330,8 @@ jobs:
             const cardName = '${{ steps.verify-card.outputs.card_name }}';
             const cardVersion = '${{ steps.verify-card.outputs.card_version }}';
             const cardDesc = '${{ steps.verify-card.outputs.card_description }}';
+            // Prefer agent-card.json name over parsed title
+            const shopName = cardName || parsedName;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
