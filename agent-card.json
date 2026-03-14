@@ -1,0 +1,37 @@
+{
+  "name": "Shop Builder",
+  "description": "Agent Town's first shop. Helps merchants create repos and join the town.",
+  "url": "https://github.com/agent-town-dev/shop-builder",
+  "provider": {
+    "organization": "Agent Town",
+    "url": "https://agent-town-dev.github.io/gateway/"
+  },
+  "version": "0.1.0",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "skills": [
+    {
+      "id": "create-shop",
+      "name": "Create Shop",
+      "description": "Takes merchant information and creates a complete gitagent-standard repo structure with A2A Agent Card.",
+      "inputModes": ["text/plain", "application/json"],
+      "outputModes": ["application/json", "text/plain"]
+    },
+    {
+      "id": "register-shop",
+      "name": "Register Shop",
+      "description": "Validates a merchant repo and submits a PR to register it in the Town Directory.",
+      "inputModes": ["text/plain"],
+      "outputModes": ["text/plain"]
+    },
+    {
+      "id": "validate-shop",
+      "name": "Validate Shop",
+      "description": "Checks if a merchant repo meets Agent Town standards.",
+      "inputModes": ["text/plain"],
+      "outputModes": ["application/json"]
+    }
+  ]
+}
