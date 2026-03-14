@@ -290,6 +290,10 @@ jobs:
                 `Then [submit a new request](https://github.com/agent-town-dev/shop-builder/issues/new?template=open-shop.yml).`,
               ].join('\n')
             });
+            try { await github.rest.issues.removeLabel({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, name: 'processing'
+            }); } catch {}
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -362,6 +366,10 @@ jobs:
                 `*Shop Builder — validate-shop completed* 🏘️`,
               ].join('\n')
             });
+            try { await github.rest.issues.removeLabel({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, name: 'processing'
+            }); } catch {}
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -519,6 +527,10 @@ jobs:
                 `*Shop Builder — register-shop completed* 🏘️`
               ].join('\n')
             });
+            try { await github.rest.issues.removeLabel({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, name: 'processing'
+            }); } catch {}
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -549,6 +561,10 @@ jobs:
               issue_number: context.issue.number,
               body: `## ❌ Registration Failed\n\n${error}\n\nPlease check and try again, or use \`[validate-shop]\` first to verify your setup.`
             });
+            try { await github.rest.issues.removeLabel({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, name: 'processing'
+            }); } catch {}
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
